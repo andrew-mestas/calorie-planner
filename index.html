@@ -3,7 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Calorie Planner</title>
+  <title>Free Weekly Calorie Planner &amp; Calorie Cycling Calculator</title>
+  <meta name="description" content="Plan your weekly calorie budget with a free calorie cycling calculator. Set a daily average, estimate maintenance calories, and distribute calories across seven days.">
+  <link rel="canonical" href="https://andrew-mestas.github.io/calorie-planner/">
+  <meta name="robots" content="index,follow">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Free Weekly Calorie Planner &amp; Calorie Cycling Calculator">
+  <meta property="og:description" content="Plan a weekly calorie budget, estimate maintenance calories, and distribute calories across seven days.">
+  <meta property="og:url" content="https://andrew-mestas.github.io/calorie-planner/">
+  <meta property="og:site_name" content="Calorie Planner">
+  <meta name="twitter:card" content="summary">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"WebApplication","name":"Weekly Calorie Planner","url":"https://andrew-mestas.github.io/calorie-planner/","applicationCategory":"HealthApplication","operatingSystem":"Any","description":"A free weekly calorie planning tool for estimating maintenance calories and distributing a calorie budget across seven days.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <style>
     :root {
@@ -100,8 +112,12 @@
     }
     .footer-note { color: var(--muted); font-size: .78rem; line-height: 1.5; margin: 12px 0 0; }
     .page-nav { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin: 0 0 20px; }
-    .page-nav button { width:auto; background:var(--nav-bg); color:var(--nav-text); }
-    .page-nav button.active { background:var(--green); color:white; }
+    .page-nav a { display:inline-block; padding:11px 14px; border-radius:10px; text-decoration:none; font-weight:700; background:var(--nav-bg); color:var(--nav-text); }
+    .page-nav a.active { background:var(--green); color:white; }
+    .seo-content { margin-top:18px; }
+    .seo-content h2 { margin:22px 0 8px; }
+    .seo-content p, .seo-content li { color:var(--muted); line-height:1.65; }
+    .seo-content ul { padding-left:22px; }
     .page-nav .theme-toggle { margin-left:auto; background:var(--panel); color:var(--ink); border:1px solid var(--line); }
     .page { display:none; }
     .page.active { display:block; }
@@ -161,78 +177,16 @@
 <body>
 <main>
   <nav class="page-nav" aria-label="App pages">
-    <button class="active" type="button" data-page="caloriePage">Calorie planner</button>
-    <button type="button" data-page="distributionPage">Distribution explorer</button>
+    <a class="active" href="./" aria-current="page">Calorie planner</a>
+    <a href="./dirichlet.html">Dirichlet explorer</a>
     <button id="themeToggle" class="theme-toggle" type="button" aria-pressed="false">☾ Dark mode</button>
   </nav>
 
-  <section id="distributionPage" class="page">
-  <header>
-    <h1>Dirichlet Distribution Explorer</h1>
-    <p>Distribute a fixed total across any number of slots. Change the array length, target amount, and α concentration to explore different allocation patterns.</p>
-  </header>
-  <div class="layout">
-    <section class="panel">
-      <h2>Distribution settings</h2>
-      <div class="field">
-        <label for="length">Array length</label>
-        <input id="length" type="number" min="1" max="100" step="1" value="7">
-        <div class="hint">Number of values to generate (1–100).</div>
-      </div>
-      <div class="field">
-        <label for="target">Total amount</label>
-        <input id="target" type="number" min="0" step="any" value="10000">
-        <div class="hint">The generated values will add up to this amount.</div>
-      </div>
-      <div class="field">
-        <label for="alphaMode">Alpha configuration</label>
-        <select id="alphaMode" style="width:100%;">
-          <option value="symmetric">Symmetric (same α for every slot)</option>
-          <option value="asymmetric">Asymmetric (custom α per slot)</option>
-        </select>
-      </div>
-      <div id="symmetricAlpha" class="field">
-        <label for="alpha">Shared alpha (α)</label>
-        <input id="alpha" type="number" min="0.01" max="1000" step="0.1" value="1">
-        <div class="hint">Below 1 = more uneven; above 1 = more balanced.</div>
-      </div>
-      <div id="asymmetricAlpha" hidden>
-        <div class="hint">Set a separate positive alpha for each slot. Larger alpha values receive a larger expected share.</div>
-        <div id="alphaInputs" class="alpha-grid"></div>
-      </div>
-      <div class="field">
-        <label for="precision">Decimal places</label>
-        <input id="precision" type="number" min="0" max="6" step="1" value="2">
-      </div>
-      <button id="generate">Generate distribution</button>
-      <button id="copy" class="secondary" type="button">Copy array</button>
-      <div id="error" class="error" role="alert"></div>
-    </section>
-
-    <div class="results">
-      <section class="panel">
-        <div class="stats">
-          <div class="stat"><span>Generated sum</span><strong id="sum">10,000.00</strong></div>
-          <div class="stat"><span>Target</span><strong id="targetStat">10,000</strong></div>
-          <div class="stat"><span>Mean per slot</span><strong id="mean">1,428.57</strong></div>
-        </div>
-        <h2>Allocation by slot</h2>
-        <div class="chart-wrap"><canvas id="allocationChart" aria-label="Bar chart of generated allocations"></canvas></div>
-        <p class="footer-note">Bars show one random sample. The thin line shows each slot's expected allocation from its alpha weight. Hover or tap to inspect values.</p>
-      </section>
-      <section class="panel">
-        <h2>Generated array</h2>
-        <div id="array" class="array-output">[1428.57, ...]</div>
-        <p class="footer-note">The chart uses unrounded values. The displayed array is rounded to your selected precision, with the final element adjusted so its displayed values sum to the target at that precision.</p>
-      </section>
-    </div>
-  </div>
-  </section>
-
   <section id="caloriePage" class="page active">
     <header>
-      <h1>Weekly Calorie Distribution</h1>
+      <h1>Free Weekly Calorie Planner</h1>
       <p>Set an average daily calorie goal and your BMR. The planner distributes your weekly calorie budget across seven days while enforcing a hard per-day ceiling at your estimated TDEE (BMR × activity multiplier).</p>
+      <p>Plan your calorie intake across an entire week instead of treating every day in isolation. Set a daily average, estimate your total daily energy expenditure (TDEE), and generate a seven-day allocation that keeps the weekly budget consistent.</p>
     </header>
     <div class="calorie-layout">
       <div class="calorie-sidebar">
@@ -306,6 +260,26 @@
       </div>
     </div>
   </section>
+
+
+    <section class="panel seo-content" aria-labelledby="weekly-calorie-guide">
+      <h2 id="weekly-calorie-guide">How weekly calorie planning works</h2>
+      <p>A weekly calorie budget is your average daily calorie target multiplied by seven. For example, a target of 1,600 calories per day creates a weekly budget of 11,200 calories. You can distribute that total evenly or vary the daily amounts while keeping the weekly total unchanged.</p>
+      <h2>Understand BMR and TDEE</h2>
+      <p>Basal metabolic rate (BMR) estimates the energy your body uses at rest. Total daily energy expenditure (TDEE) estimates daily energy use after accounting for activity. This planner estimates TDEE by multiplying the BMR input by the selected activity factor. These estimates are starting points, not measurements of exact energy needs.</p>
+      <h2>What is calorie cycling?</h2>
+      <p>Calorie cycling means varying calorie intake from day to day while maintaining a chosen average over a longer period. Some people prefer a higher target on more active days and a lower target on quieter days. The weekly total remains the key budget in this calculator.</p>
+      <h2>Frequently asked questions</h2>
+      <h3>Does eating more on one day ruin a calorie deficit?</h3>
+      <p>One higher-calorie day does not determine the whole week's outcome. The total intake over time matters. A weekly budget can help put individual days into context.</p>
+      <h3>How do I calculate a weekly calorie budget?</h3>
+      <p>Multiply your average daily calorie target by seven. For example, 1,800 calories per day equals 12,600 calories per week.</p>
+      <h3>What is the difference between BMR and TDEE?</h3>
+      <p>BMR estimates energy use at rest. TDEE estimates total daily energy use, including activity. TDEE is generally higher than BMR.</p>
+      <h3>Is calorie cycling necessary for weight loss?</h3>
+      <p>No. Calorie cycling is an optional planning approach. A consistent daily target can also work; the approach should be practical and sustainable for the individual.</p>
+      <p class="footer-note">This calculator is for educational planning and does not provide medical advice or a personalized nutrition prescription. Very low calorie targets may be inappropriate; consult a qualified healthcare professional for individualized guidance.</p>
+    </section>
 
   <!-- Bottom AdSense placement. It remains hidden until valid publisher and slot IDs are configured. -->
   <aside id="bottomAdContainer" class="ad-container" aria-label="Advertisement" hidden>
