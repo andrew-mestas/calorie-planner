@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://andrew-mestas.github.io/calorie-planner/sitemap.xml
