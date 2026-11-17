@@ -106,6 +106,9 @@
     .page { display:none; }
     .page.active { display:block; }
     .calorie-layout { display:grid; grid-template-columns:290px minmax(0,1fr); gap:18px; align-items:start; }
+    .calorie-sidebar { display:grid; gap:18px; min-width:0; }
+    .kofi-panel { padding:12px; overflow:hidden; }
+    .kofi-panel iframe { display:block; width:100%; max-width:100%; border:0; background:#f9f9f9; }
     .calorie-stats { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:16px; }
     .calorie-stat { background:var(--surface-soft); border:1px solid var(--line); border-radius:12px; padding:12px; min-width:0; }
     .calorie-stat span { display:block; color:var(--muted); font-size:.73rem; margin-bottom:5px; }
@@ -232,6 +235,7 @@
       <p>Set an average daily calorie goal and your BMR. The planner distributes your weekly calorie budget across seven days while enforcing a hard per-day ceiling at your estimated TDEE (BMR × activity multiplier).</p>
     </header>
     <div class="calorie-layout">
+      <div class="calorie-sidebar">
       <section class="panel">
         <h2>Your targets</h2>
         <div class="field">
@@ -271,6 +275,10 @@
         <div id="calorieError" class="error" role="alert"></div>
         <div id="calorieStatus" class="status">Enter your targets and generate a plan.</div>
       </section>
+      <aside class="panel kofi-panel" aria-label="Support the creator">
+        <iframe id="kofiframe" src="https://ko-fi.com/bitsnbytes/?hidefeed=true&widget=true&embed=true&preview=true" style="border:none;width:100%;padding:4px;background:#f9f9f9;" height="712" title="bitsnbytes" loading="lazy"></iframe>
+      </aside>
+      </div>
 
       <div class="results">
         <section class="panel">
