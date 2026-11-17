@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dirichlet Distribution Explorer</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #18231f;
+      --muted: #66736d;
+      --line: #e3e9e5;
+      --panel: #fff;
+      --bg: #f4f7f5;
+      --green: #18845b;
+      --green-soft: #e7f4ed;
+      --surface-soft: #f7faf8;
+      --input-bg: #ffffff;
+      --nav-bg: #e7eee9;
+      --nav-text: #3d5147;
+      --status-bg: #eef5f0;
+      --status-text: #345b45;
+      --warning-bg: #fff4e5;
+      --warning-text: #8a4b08;
+      --output-text: #34443b;
+      --error: #b42318;
+      --grid: #edf1ee;
+      --shadow: 0 8px 28px rgba(28, 55, 41, .045);
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --ink: #e7eee9;
+      --muted: #a3b1a9;
+      --line: #34443c;
+      --panel: #1c2923;
+      --bg: #111a15;
+      --green: #36a879;
+      --green-soft: #263e32;
+      --surface-soft: #24332b;
+      --input-bg: #17231c;
+      --nav-bg: #26372e;
+      --nav-text: #d3e1d8;
+      --status-bg: #20392c;
+      --status-text: #b8e0c7;
+      --warning-bg: #49351f;
+      --warning-text: #ffd69b;
+      --output-text: #d6e4db;
+      --error: #ff8f86;
+      --grid: #34443c;
+      --shadow: 0 8px 28px rgba(0, 0, 0, .22);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 32px 16px; background: var(--bg); color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main { max-width: 1000px; margin: 0 auto; }
+    header { margin-bottom: 22px; }
+    h1 { margin: 0 0 8px; font-size: clamp(1.65rem, 4vw, 2.35rem); letter-spacing: -.04em; }
+    header p { margin: 0; color: var(--muted); line-height: 1.55; max-width: 700px; }
+    .layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .panel {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 18px;
+      padding: 20px; box-shadow: var(--shadow);
+    }
+    h2 { font-size: 1rem; margin: 0 0 16px; }
+    .field { display: grid; gap: 7px; margin-bottom: 15px; }
+    label { font-size: .84rem; font-weight: 650; }
+    .alpha-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin: 8px 0 15px; }
+    .alpha-item { display: grid; gap: 5px; }
+    .alpha-item label { color: var(--muted); font-size: .75rem; }
+    .alpha-item input { padding: 8px 9px; }
+    .subheading { margin: 16px 0 8px; font-size: .86rem; }
+    input, select {
+      width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px;
+      color: var(--ink); background: var(--input-bg); font: inherit; outline: none;
+    }
+    input:focus, select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(24,132,91,.16); }
+    select option { color: var(--ink); background: var(--panel); }
+    .hint { color: var(--muted); font-size: .75rem; line-height: 1.4; }
+    button {
+      border: 0; border-radius: 10px; padding: 11px 14px; font: inherit; font-weight: 700;
+      cursor: pointer; background: var(--green); color: white; width: 100%;
+      transition: transform .12s ease, filter .12s ease;
+    }
+    button:hover { filter: brightness(.96); transform: translateY(-1px); }
+    button.secondary { background: var(--green-soft); color: var(--green); margin-top: 9px; }
+    .error { min-height: 20px; margin-top: 10px; color: var(--error); font-size: .8rem; }
+    .results { display: grid; gap: 18px; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+    .stat { background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; padding: 12px; min-width: 0; }
+    .stat span { display: block; color: var(--muted); font-size: .73rem; margin-bottom: 5px; }
+    .stat strong { font-size: clamp(1rem, 2vw, 1.35rem); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .chart-wrap { position: relative; height: 330px; }
+    .array-output {
+      border-radius: 11px; background: var(--surface-soft); border: 1px solid var(--line);
+      padding: 13px; font: .82rem/1.65 ui-monospace, SFMono-Regular, Menlo, monospace;
+      overflow-wrap: anywhere; color: var(--output-text);
+    }
+    .footer-note { color: var(--muted); font-size: .78rem; line-height: 1.5; margin: 12px 0 0; }
+    .page-nav { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin: 0 0 20px; }
+    .page-nav button { width:auto; background:var(--nav-bg); color:var(--nav-text); }
+    .page-nav button.active { background:var(--green); color:white; }
+    .page-nav .theme-toggle { margin-left:auto; background:var(--panel); color:var(--ink); border:1px solid var(--line); }
+    .page { display:none; }
+    .page.active { display:block; }
+    .calorie-layout { display:grid; grid-template-columns:290px minmax(0,1fr); gap:18px; align-items:start; }
+    .calorie-stats { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:16px; }
+    .calorie-stat { background:var(--surface-soft); border:1px solid var(--line); border-radius:12px; padding:12px; min-width:0; }
+    .calorie-stat span { display:block; color:var(--muted); font-size:.73rem; margin-bottom:5px; }
+    .calorie-stat strong { font-size:clamp(1rem,2vw,1.3rem); font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+    .status { padding:11px 12px; border-radius:10px; font-size:.82rem; line-height:1.45; margin-top:12px; background:var(--status-bg); color:var(--status-text); }
+    .status.warning { background:var(--warning-bg); color:var(--warning-text); }
+    .daily-table { width:100%; border-collapse:collapse; font-size:.85rem; }
+    .daily-table th,.daily-table td { padding:9px 7px; border-bottom:1px solid var(--line); text-align:right; }
+    .daily-table th:first-child,.daily-table td:first-child { text-align:left; }
+    .daily-table th { color:var(--muted); font-size:.75rem; font-weight:650; }
+    .daily-table tr.over-cap td { color:var(--error); }
+    .inline-field { display:flex; align-items:center; gap:8px; }
+    .inline-field input { flex:1; }
+    .ad-container {
+      width: 100%;
+      max-width: 1000px;
+      margin: 28px auto 0;
+      padding: 12px 0 4px;
+      text-align: center;
+      border-top: 1px solid var(--line);
+    }
+    .ad-container[hidden] { display: none; }
+    .ad-label {
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: .68rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .ad-container .adsbygoogle {
+      display: block;
+      width: 100%;
+      min-height: 90px;
+      overflow: hidden;
+    }
+    @media (max-width: 760px) {
+      .calorie-layout { grid-template-columns:1fr; }
+
+      .layout { grid-template-columns: 1fr; }
+      .chart-wrap { height: 290px; }
+    }
+    @media (max-width: 440px) {
+      body { padding: 22px 12px; }
+      .panel { padding: 16px; }
+      .stats { grid-template-columns: 1fr 1fr; }
+      .stat:last-child { grid-column: 1 / -1; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <nav class="page-nav" aria-label="App pages">
+    <button class="active" type="button" data-page="caloriePage">Calorie planner</button>
+    <button type="button" data-page="distributionPage">Distribution explorer</button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-pressed="false">☾ Dark mode</button>
+  </nav>
+
+  <section id="distributionPage" class="page">
+  <header>
+    <h1>Dirichlet Distribution Explorer</h1>
+    <p>Distribute a fixed total across any number of slots. Change the array length, target amount, and α concentration to explore different allocation patterns.</p>
+  </header>
+  <div class="layout">
+    <section class="panel">
+      <h2>Distribution settings</h2>
+      <div class="field">
+        <label for="length">Array length</label>
+        <input id="length" type="number" min="1" max="100" step="1" value="7">
+        <div class="hint">Number of values to generate (1–100).</div>
+      </div>
+      <div class="field">
+        <label for="target">Total amount</label>
+        <input id="target" type="number" min="0" step="any" value="10000">
+        <div class="hint">The generated values will add up to this amount.</div>
+      </div>
+      <div class="field">
+        <label for="alphaMode">Alpha configuration</label>
+        <select id="alphaMode" style="width:100%;">
+          <option value="symmetric">Symmetric (same α for every slot)</option>
+          <option value="asymmetric">Asymmetric (custom α per slot)</option>
+        </select>
+      </div>
+      <div id="symmetricAlpha" class="field">
+        <label for="alpha">Shared alpha (α)</label>
+        <input id="alpha" type="number" min="0.01" max="1000" step="0.1" value="1">
+        <div class="hint">Below 1 = more uneven; above 1 = more balanced.</div>
+      </div>
+      <div id="asymmetricAlpha" hidden>
+        <div class="hint">Set a separate positive alpha for each slot. Larger alpha values receive a larger expected share.</div>
+        <div id="alphaInputs" class="alpha-grid"></div>
+      </div>
+      <div class="field">
+        <label for="precision">Decimal places</label>
+        <input id="precision" type="number" min="0" max="6" step="1" value="2">
+      </div>
+      <button id="generate">Generate distribution</button>
+      <button id="copy" class="secondary" type="button">Copy array</button>
+      <div id="error" class="error" role="alert"></div>
+    </section>
+
+    <div class="results">
+      <section class="panel">
+        <div class="stats">
+          <div class="stat"><span>Generated sum</span><strong id="sum">10,000.00</strong></div>
+          <div class="stat"><span>Target</span><strong id="targetStat">10,000</strong></div>
+          <div class="stat"><span>Mean per slot</span><strong id="mean">1,428.57</strong></div>
+        </div>
+        <h2>Allocation by slot</h2>
+        <div class="chart-wrap"><canvas id="allocationChart" aria-label="Bar chart of generated allocations"></canvas></div>
+        <p class="footer-note">Bars show one random sample. The thin line shows each slot's expected allocation from its alpha weight. Hover or tap to inspect values.</p>
+      </section>
+      <section class="panel">
+        <h2>Generated array</h2>
+        <div id="array" class="array-output">[1428.57, ...]</div>
+        <p class="footer-note">The chart uses unrounded values. The displayed array is rounded to your selected precision, with the final element adjusted so its displayed values sum to the target at that precision.</p>
+      </section>
+    </div>
+  </div>
+  </section>
+
+  <section id="caloriePage" class="page active">
+    <header>
+      <h1>Weekly Calorie Distribution</h1>
+      <p>Set an average daily calorie goal and your BMR. The planner distributes your weekly calorie budget across seven days while enforcing a hard per-day ceiling at your estimated TDEE (BMR × activity multiplier).</p>
+    </header>
+    <div class="calorie-layout">
+      <section class="panel">
+        <h2>Your targets</h2>
+        <div class="field">
+          <label for="dailyGoal">Target daily calories (weekly average)</label>
+          <input id="dailyGoal" type="number" min="1" max="10000" step="1" value="1600">
+          <div class="hint">Your weekly budget is this value × 7. Individual days may vary around the average.</div>
+        </div>
+        <div class="field">
+          <label for="bmrInput">BMR (calories/day)</label>
+          <input id="bmrInput" type="number" min="1" max="10000" step="1" value="1675">
+          <div class="hint">Used with your activity multiplier to estimate TDEE, which becomes the daily allocation ceiling.</div>
+        </div>
+        <div class="field">
+          <label for="activityLevel">Activity level</label>
+          <select id="activityLevel" style="width:100%;">
+            <option value="1.2">Sedentary · 1.20</option>
+            <option value="1.375">Lightly active · 1.375</option>
+            <option value="1.55" selected>Moderately active · 1.55</option>
+            <option value="1.725">Very active · 1.725</option>
+            <option value="1.9">Extra active · 1.90</option>
+          </select>
+          <div class="hint">TDEE = BMR × multiplier. The estimated TDEE is the hard daily allocation ceiling.</div>
+        </div>
+        <div class="field">
+          <label for="calorieMode">Distribution style</label>
+          <select id="calorieMode" style="width:100%;">
+            <option value="random">Variable (Dirichlet)</option>
+            <option value="balanced">Even distribution</option>
+          </select>
+        </div>
+        <div class="field" id="calorieAlphaField">
+          <label for="calorieAlpha">Variation (α)</label>
+          <input id="calorieAlpha" type="number" min="0.1" max="100" step="0.1" value="8">
+          <div class="hint">Lower α generally creates more variation; higher α stays closer to the daily average.</div>
+        </div>
+        <button id="generateCalories" type="button">Generate weekly plan</button>
+        <div id="calorieError" class="error" role="alert"></div>
+        <div id="calorieStatus" class="status">Enter your targets and generate a plan.</div>
+      </section>
+
+      <div class="results">
+        <section class="panel">
+          <div class="calorie-stats">
+            <div class="calorie-stat"><span>Weekly calorie budget</span><strong id="weeklyBudget">11,200</strong></div>
+            <div class="calorie-stat"><span>Estimated maintenance (TDEE)</span><strong id="tdeeValue">2,596</strong></div>
+            <div class="calorie-stat"><span>Average daily deficit</span><strong id="dailyDeficit">996</strong></div>
+            <div class="calorie-stat"><span>Maximum daily allocation</span><strong id="maxAllocation">—</strong></div>
+          </div>
+          <h2>Daily calorie allocations</h2>
+          <div class="chart-wrap"><canvas id="calorieChart" aria-label="Weekly calorie allocations compared with estimated TDEE"></canvas></div>
+          <p class="footer-note">Bars are the generated daily targets. The red line is the estimated TDEE ceiling; the gold line is your average daily goal.</p>
+        </section>
+        <section class="panel">
+          <h2>Weekly plan</h2>
+          <div style="overflow-x:auto">
+            <table class="daily-table">
+              <thead><tr><th>Day</th><th>Calories</th><th>vs. average</th><th>TDEE headroom</th></tr></thead>
+              <tbody id="calorieRows"></tbody>
+              <tfoot><tr><th>Weekly total</th><th id="weeklyTotal">—</th><th colspan="2"></th></tr></tfoot>
+            </table>
+          </div>
+          <p class="footer-note">This is a mathematical allocation tool, not a personalized nutrition prescription. BMR is an estimate of energy used at rest; activity multipliers provide a rough TDEE estimate.</p>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bottom AdSense placement. It remains hidden until valid publisher and slot IDs are configured. -->
+  <aside id="bottomAdContainer" class="ad-container" aria-label="Advertisement" hidden>
+    <div class="ad-label">Advertisement</div>
+    <ins id="bottomAdSlot" class="adsbygoogle"
+         style="display:block"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+  </aside>
+</main>
+
+<script>
+  // Box–Muller transform: sample from a standard normal distribution.
+  function randomNormal() {
+    let u1 = 0;
+    while (u1 === 0) u1 = Math.random();
+    const u2 = Math.random();
+    return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+  }
+
+  // Marsaglia–Tsang gamma sampler, parameterized by shape alpha and scale 1.
+  function gammaSample(alpha) {
+    if (!(alpha > 0)) throw new Error("Alpha must be greater than zero.");
+
+    if (alpha < 1) {
+      let u = 0;
+      while (u === 0) u = Math.random();
+      return gammaSample(alpha + 1) * Math.pow(u, 1 / alpha);
+    }
+
+    const d = alpha - 1 / 3;
+    const c = 1 / Math.sqrt(9 * d);
+
+    for (;;) {
+      const x = randomNormal();
+      const base = 1 + c * x;
+      if (base <= 0) continue;
+
+      const v = base * base * base;
+      const u = Math.random();
+
+      if (
+        u < 1 - 0.0331 * x * x * x * x ||
+        Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))
+      ) {
+        return d * v;
+      }
+    }
+  }
+
+  // General Dirichlet sampler: each slot has its own positive alpha parameter.
+  // Passing the same alpha repeatedly gives the symmetric distribution.
+  function dirichletAllocation(alphas, target) {
+    const samples = alphas.map(alpha => gammaSample(alpha));
+    const sampleSum = samples.reduce((sum, value) => sum + value, 0);
+    return samples.map(value => (value / sampleSum) * target);
+  }
+
+  const $ = id => document.getElementById(id);
+  let chart;
+  let currentValues = [];
+  let currentAlphas = [];
+
+  function syncAlphaInputs() {
+    const length = Math.max(1, Math.min(100, Math.floor(Number($("length").value) || 1)));
+    const previous = [...document.querySelectorAll(".slot-alpha")].map(input => input.value);
+    $("alphaInputs").innerHTML = "";
+    for (let i = 0; i < length; i++) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "alpha-item";
+      const label = document.createElement("label");
+      label.textContent = `Slot ${i + 1} · α`;
+      label.htmlFor = `alpha-${i}`;
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = "0.01";
+      input.max = "1000";
+      input.step = "0.1";
+      input.value = previous[i] || "1";
+      input.className = "slot-alpha";
+      input.id = `alpha-${i}`;
+      input.setAttribute("aria-label", `Alpha for slot ${i + 1}`);
+      wrapper.append(label, input);
+      $("alphaInputs").append(wrapper);
+    }
+  }
+
+  function updateAlphaMode() {
+    const asymmetric = $("alphaMode").value === "asymmetric";
+    $("symmetricAlpha").hidden = asymmetric;
+    $("asymmetricAlpha").hidden = !asymmetric;
+  }
+
+  function formatNumber(value, precision) {
+    return value.toLocaleString(undefined, {
+      minimumFractionDigits: precision,
+      maximumFractionDigits: precision
+    });
+  }
+
+  function roundedValuesThatPreserveTotal(values, target, precision) {
+    const scale = 10 ** precision;
+    const targetUnits = Math.round(target * scale);
+    const units = values.map(value => Math.round(value * scale));
+    const difference = targetUnits - units.reduce((a, b) => a + b, 0);
+    units[units.length - 1] += difference;
+    return units.map(value => value / scale);
+  }
+
+  function renderChart(values, alphas, target) {
+    const ctx = $("allocationChart");
+    const labels = values.map((_, i) => `Slot ${i + 1}`);
+    const alphaSum = alphas.reduce((a, b) => a + b, 0);
+    const expected = alphas.map(alpha => target * alpha / alphaSum);
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          type: "bar",
+          label: "Random allocation",
+          data: values,
+          backgroundColor: "rgba(43, 157, 108, 0.72)",
+          hoverBackgroundColor: "#116744",
+          borderRadius: 7,
+          borderSkipped: false,
+          maxBarThickness: 54
+        }, {
+          type: "line",
+          label: "Expected allocation",
+          data: expected,
+          borderColor: "#e09b35",
+          backgroundColor: "#e09b35",
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          borderWidth: 2,
+          tension: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 350 },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: context => ` ${context.parsed.y.toLocaleString(undefined, { maximumFractionDigits: 4 })}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: document.documentElement.dataset.theme === "dark" ? "#a3b1a9" : "#66736d" }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: document.documentElement.dataset.theme === "dark" ? "#34443c" : "#edf1ee" },
+            ticks: {
+              color: "#66736d",
+              callback: value => Number(value).toLocaleString()
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function generate() {
+    $("error").textContent = "";
+    const length = Number($("length").value);
+    const target = Number($("target").value);
+    const alphaMode = $("alphaMode").value;
+    const alphas = alphaMode === "asymmetric"
+      ? [...document.querySelectorAll(".slot-alpha")].map(input => Number(input.value))
+      : Array(length).fill(Number($("alpha").value));
+    const precision = Number($("precision").value);
+
+    if (!Number.isInteger(length) || length < 1 || length > 100) {
+      $("error").textContent = "Array length must be a whole number from 1 to 100.";
+      return;
+    }
+    if (!Number.isFinite(target) || target < 0) {
+      $("error").textContent = "Total amount must be a finite number greater than or equal to zero.";
+      return;
+    }
+    if (alphas.length !== length || alphas.some(alpha => !Number.isFinite(alpha) || alpha <= 0 || alpha > 1000)) {
+      $("error").textContent = "Every alpha must be greater than zero and no more than 1000.";
+      return;
+    }
+    if (!Number.isInteger(precision) || precision < 0 || precision > 6) {
+      $("error").textContent = "Decimal places must be a whole number from 0 to 6.";
+      return;
+    }
+
+    try {
+      currentAlphas = alphas;
+      currentValues = dirichletAllocation(alphas, target);
+      const displayValues = roundedValuesThatPreserveTotal(currentValues, target, precision);
+      const displayedSum = displayValues.reduce((a, b) => a + b, 0);
+
+      $("sum").textContent = formatNumber(displayedSum, precision);
+      $("targetStat").textContent = target.toLocaleString();
+      $("mean").textContent = formatNumber(target / length, precision);
+      $("array").textContent = `[${displayValues.map(v => v.toFixed(precision)).join(", ")}]`;
+      renderChart(currentValues, currentAlphas, target);
+    } catch (error) {
+      $("error").textContent = error.message || "Could not generate allocation.";
+    }
+  }
+
+  $("generate").addEventListener("click", generate);
+  $("alphaMode").addEventListener("change", () => { updateAlphaMode(); generate(); });
+  $("length").addEventListener("change", () => {
+    syncAlphaInputs();
+    if ($("alphaMode").value === "asymmetric") generate();
+  });
+  $("alphaInputs").addEventListener("change", event => {
+    if (event.target.classList.contains("slot-alpha") && $("alphaMode").value === "asymmetric") generate();
+  });
+  $("copy").addEventListener("click", async () => {
+    if (!currentValues.length) return;
+    const precision = Number($("precision").value);
+    const target = Number($("target").value);
+    const displayValues = roundedValuesThatPreserveTotal(currentValues, target, precision);
+    const text = `[${displayValues.map(v => v.toFixed(precision)).join(", ")}]`;
+    try {
+      await navigator.clipboard.writeText(text);
+      $("copy").textContent = "Copied!";
+      setTimeout(() => $("copy").textContent = "Copy array", 1300);
+    } catch {
+      $("error").textContent = "Clipboard access is unavailable in this browser. Select and copy the array above.";
+    }
+  });
+
+
+  // Calorie planner: use Dirichlet proportions, then enforce a hard BMR cap
+  // by redistributing any excess across days that still have available capacity.
+  let calorieChart;
+
+  function cappedAllocation(weights, total, cap) {
+    const n = weights.length;
+    if (total > n * cap + 1e-8) {
+      throw new Error("This weekly target is not feasible: the weekly budget exceeds 7 × estimated TDEE.");
+    }
+    const result = Array(n).fill(0);
+    let remaining = total;
+    let active = weights.map((_, i) => i);
+
+    while (active.length && remaining > 1e-8) {
+      const weightSum = active.reduce((sum, i) => sum + weights[i], 0);
+      let cappedAny = false;
+
+      for (const i of [...active]) {
+        const proposed = remaining * weights[i] / weightSum;
+        if (proposed > cap) {
+          result[i] = cap;
+          remaining -= cap;
+          active = active.filter(index => index !== i);
+          cappedAny = true;
+        }
+      }
+
+      if (!cappedAny) {
+        const sum = active.reduce((s, i) => s + weights[i], 0);
+        for (const i of active) result[i] = remaining * weights[i] / sum;
+        remaining = 0;
+      }
+    }
+    return result;
+  }
+
+  function generateCaloriePlan() {
+    const goal = Number($("dailyGoal").value);
+    const bmr = Number($("bmrInput").value);
+    const multiplier = Number($("activityLevel").value);
+    const alpha = Number($("calorieAlpha").value);
+    const mode = $("calorieMode").value;
+    $("calorieError").textContent = "";
+
+    if (!Number.isFinite(goal) || goal <= 0 || !Number.isFinite(bmr) || bmr <= 0) {
+      $("calorieError").textContent = "Enter valid positive values for the daily goal and BMR.";
+      return;
+    }
+    if (!Number.isFinite(multiplier) || multiplier <= 0) {
+      $("calorieError").textContent = "Choose a valid activity multiplier.";
+      return;
+    }
+    if (mode === "random" && (!Number.isFinite(alpha) || alpha <= 0 || alpha > 100)) {
+      $("calorieError").textContent = "Variation alpha must be greater than 0 and no more than 100.";
+      return;
+    }
+
+    const weeklyBudget = goal * 7;
+    const tdee = bmr * multiplier;
+    if (weeklyBudget > tdee * 7 + 1e-8) {
+      $("calorieError").textContent = `Not feasible: the weekly budget (${weeklyBudget.toLocaleString()} kcal) is greater than the maximum allowed (${(tdee * 7).toLocaleString()} kcal at your estimated TDEE cap). Lower the daily goal or increase the BMR value if it was entered incorrectly.`;
+      $("calorieStatus").className = "status warning";
+      $("calorieStatus").textContent = "No valid seven-day allocation exists with the current inputs.";
+      return;
+    }
+
+    try {
+      const weights = mode === "balanced"
+        ? Array(7).fill(1)
+        : Array.from({length: 7}, () => gammaSample(alpha));
+      const allocations = cappedAllocation(weights, weeklyBudget, tdee);
+      // Round to whole calories while preserving the weekly total and TDEE ceiling.
+      const targetUnits = Math.round(weeklyBudget);
+      const rounded = allocations.map(v => Math.floor(v));
+      let unitsLeft = targetUnits - rounded.reduce((a,b) => a+b, 0);
+      const order = allocations.map((v,i) => ({i, fraction:v-Math.floor(v)}))
+        .sort((a,b) => b.fraction-a.fraction);
+      for (const item of order) {
+        if (unitsLeft <= 0) break;
+        if (rounded[item.i] + 1 <= Math.floor(tdee)) {
+          rounded[item.i] += 1;
+          unitsLeft -= 1;
+        }
+      }
+      // If the TDEE ceiling has fractional calories, use decimal allocations instead.
+      const finalValues = unitsLeft > 0 ? allocations : rounded;
+      const total = finalValues.reduce((a,b) => a+b, 0);
+      const averageDeficit = tdee - goal;
+      const maxValue = Math.max(...finalValues);
+
+      $("weeklyBudget").textContent = Math.round(weeklyBudget).toLocaleString() + " kcal";
+      $("tdeeValue").textContent = Math.round(tdee).toLocaleString() + " kcal";
+      $("dailyDeficit").textContent = Math.round(averageDeficit).toLocaleString() + " kcal";
+      $("maxAllocation").textContent = Math.round(maxValue).toLocaleString() + " kcal";
+      $("weeklyTotal").textContent = Math.round(total).toLocaleString() + " kcal";
+
+      const dayNames = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+      $("calorieRows").innerHTML = "";
+      dayNames.forEach((day, i) => {
+        const value = finalValues[i];
+        const tr = document.createElement("tr");
+        if (value > tdee + 1e-7) tr.className = "over-cap";
+        const cells = [
+          day,
+          `${Math.round(value).toLocaleString()} kcal`,
+          `${value-goal >= 0 ? "+" : ""}${Math.round(value-goal).toLocaleString()} kcal`,
+          `${Math.round(tdee-value).toLocaleString()} kcal`
+        ];
+        cells.forEach(text => {
+          const td = document.createElement("td");
+          td.textContent = text;
+          tr.append(td);
+        });
+        $("calorieRows").append(tr);
+      });
+
+      const ctx = $("calorieChart");
+      if (calorieChart) calorieChart.destroy();
+      calorieChart = new Chart(ctx, {
+        data: {
+          labels: dayNames,
+          datasets: [
+            {
+              type: "bar",
+              label: "Daily allocation",
+              data: finalValues,
+              backgroundColor: "rgba(43,157,108,.75)",
+              borderRadius: 7,
+              borderSkipped: false
+            },
+            {
+              type: "line",
+              label: "Estimated TDEE ceiling",
+              data: Array(7).fill(tdee),
+              borderColor: "#c94b43",
+              pointRadius: 0,
+              borderWidth: 2,
+              borderDash: [6,4]
+            },
+            {
+              type: "line",
+              label: "Daily average goal",
+              data: Array(7).fill(goal),
+              borderColor: "#e09b35",
+              pointRadius: 0,
+              borderWidth: 2
+            }
+          ]
+        },
+        options: {
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{legend:{position:"bottom",labels:{color:document.documentElement.dataset.theme === "dark" ? "#a3b1a9" : "#66736d"}}},
+          scales:{
+            x:{grid:{display:false},ticks:{color:document.documentElement.dataset.theme === "dark" ? "#a3b1a9" : "#66736d"}},
+            y:{beginAtZero:true,grid:{color:document.documentElement.dataset.theme === "dark" ? "#34443c" : "#edf1ee"},ticks:{color:document.documentElement.dataset.theme === "dark" ? "#a3b1a9" : "#66736d"}}
+          }
+        }
+      });
+
+      const belowTdee = averageDeficit > 0;
+      $("calorieStatus").className = "status";
+      $("calorieStatus").textContent =
+        `Valid plan: all seven days are at or below your estimated TDEE ceiling. ` +
+        `Estimated TDEE is ${Math.round(tdee).toLocaleString()} kcal/day; ` +
+        (belowTdee
+          ? `your average goal is about ${Math.round(averageDeficit).toLocaleString()} kcal/day below estimated maintenance.`
+          : `your average goal is not below estimated maintenance using this activity multiplier.`);
+    } catch (error) {
+      $("calorieError").textContent = error.message || "Unable to generate the weekly plan.";
+    }
+  }
+
+  const themeToggle = $("themeToggle");
+  const savedTheme = localStorage.getItem("dirichlet-app-theme");
+  if (savedTheme === "dark") document.documentElement.dataset.theme = "dark";
+  function refreshThemeButton() {
+    const isDark = document.documentElement.dataset.theme === "dark";
+    themeToggle.textContent = isDark ? "☀ Light mode" : "☾ Dark mode";
+    themeToggle.setAttribute("aria-pressed", String(isDark));
+  }
+  refreshThemeButton();
+  themeToggle.addEventListener("click", () => {
+    const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem("dirichlet-app-theme", next);
+    refreshThemeButton();
+    const palette = next === "dark"
+      ? { text: "#a3b1a9", grid: "#34443c" }
+      : { text: "#66736d", grid: "#edf1ee" };
+    [calorieChart, chart].forEach(instance => {
+      if (!instance) return;
+      instance.options.scales.x.ticks.color = palette.text;
+      instance.options.scales.y.ticks.color = palette.text;
+      instance.options.scales.y.grid.color = palette.grid;
+      if (instance.options.plugins?.legend?.labels) {
+        instance.options.plugins.legend.labels.color = palette.text;
+      }
+      instance.update();
+    });
+  });
+
+  // Only page-tab buttons participate in page switching. The theme toggle
+  // shares the navigation bar but must not clear the selected page.
+  document.querySelectorAll(".page-nav button[data-page]").forEach(button => {
+    button.addEventListener("click", () => {
+      document.querySelectorAll(".page-nav button[data-page]").forEach(item => {
+        item.classList.toggle("active", item === button);
+        item.setAttribute("aria-current", item === button ? "page" : "false");
+      });
+      document.querySelectorAll(".page").forEach(page => {
+        page.classList.toggle("active", page.id === button.dataset.page);
+      });
+    });
+  });
+  $("generateCalories").addEventListener("click", generateCaloriePlan);
+  $("calorieMode").addEventListener("change", () => {
+    $("calorieAlphaField").hidden = $("calorieMode").value === "balanced";
+  });
+  ["dailyGoal","bmrInput","activityLevel","calorieAlpha"].forEach(id => {
+    $(id).addEventListener("change", generateCaloriePlan);
+  });
+
+  syncAlphaInputs();
+  updateAlphaMode();
+  generate();
+  generateCaloriePlan();
+</script>
+<script>
+  // Configure these two values after creating a display ad unit in AdSense.
+  // Example publisher ID: ca-pub-1234567890123456
+  const ADSENSE_PUBLISHER_ID = "";
+  // Example ad slot ID: 1234567890
+  const ADSENSE_SLOT_ID = "";
+
+  (function initializeBottomAd() {
+    const publisherId = ADSENSE_PUBLISHER_ID.trim();
+    const slotId = ADSENSE_SLOT_ID.trim();
+
+    // Do not load AdSense or show an empty ad box until both IDs are configured.
+    if (!/^ca-pub-\\d+$/.test(publisherId) || !/^\\d+$/.test(slotId)) return;
+
+    const container = document.getElementById("bottomAdContainer");
+    const slot = document.getElementById("bottomAdSlot");
+    if (!container || !slot) return;
+
+    slot.setAttribute("data-ad-client", publisherId);
+    slot.setAttribute("data-ad-slot", slotId);
+    container.hidden = false;
+
+    const adsScript = document.createElement("script");
+    adsScript.async = true;
+    adsScript.crossOrigin = "anonymous";
+    adsScript.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" +
+      encodeURIComponent(publisherId);
+    adsScript.onload = function () {
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch (error) {
+        console.warn("AdSense ad could not be initialized:", error);
+      }
+    };
+    document.head.appendChild(adsScript);
+  })();
+</script>
+</body>
+</html>
